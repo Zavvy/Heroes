@@ -13,8 +13,6 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityListener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerListener;
-import org.bukkit.util.config.ConfigurationNode;
-
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.classes.HeroClass;
 import com.herocraftonline.dev.heroes.effects.Expirable;
@@ -25,13 +23,9 @@ import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.persistence.HeroManager;
 import com.herocraftonline.dev.heroes.skill.ActiveSkill;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class SkillBlackjack extends ActiveSkill {
-
-    private String applyText;
-    private String expireText;
-    private String stunApplyText;
-    private String stunExpireText;
 
     private PlayerListener playerListener = new SkillPlayerListener();
     private EntityListener entityListener = new SkillEntityListener(this);
@@ -44,37 +38,18 @@ public class SkillBlackjack extends ActiveSkill {
         setUsage("/skill blackjack");
         setArgumentRange(0, 0);
         setIdentifiers(new String[] { "skill blackjack" });
+    }
 
+    @Override
+    public void init() {
         registerEvent(Type.ENTITY_DAMAGE, entityListener, Priority.Normal);
         registerEvent(Type.PLAYER_INTERACT, playerListener, Priority.Normal);
     }
 
     @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = super.getDefaultConfig();
-        node.setProperty("apply-text", "%hero% prepared his blackjack!");
-        node.setProperty("expire-text", "%hero% sheathed his blackjack!");
-        node.setProperty("stun-duration", 5000);
-        node.setProperty("stun-chance", 0.20);
-        node.setProperty("stun-apply-text", "%target% is stunned!");
-        node.setProperty("stun-expire-text", "%target% is no longer stunned!");
-        node.setProperty("duration", 20000);
-        return node;
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        applyText = getSetting(null, "apply-text", "%hero% prepared his blackjack!").replace("%hero%", "$1");
-        expireText = getSetting(null, "expire-text", "%hero% sheathed his blackjack!").replace("%hero%", "$1");
-        stunApplyText = getSetting(null, "stun-apply-text", "%target% is stunned!").replace("%target%", "$1");
-        stunExpireText = getSetting(null, "stun-expire-text", "%target% is no longer stunned!").replace("%target%", "$1");
-    }
-
-    @Override
     public boolean use(Hero hero, String[] args) {
         broadcastExecuteText(hero);
-        int duration = getSetting(hero.getHeroClass(), "duration", 20000);
+        int duration = hero.getHeroClass().getSkillData(this, "duration", 20000);
         hero.addEffect(new BlackjackEffect(this, duration));
 
         return true;
@@ -90,13 +65,15 @@ public class SkillBlackjack extends ActiveSkill {
         public void apply(Hero hero) {
             super.apply(hero);
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), applyText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.APPLYTEXT, "%hero% prepared a blackjack!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override
         public void remove(Hero hero) {
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), expireText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.UNAPPLYTEXT, "%hero% sheathed the blackjack!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
     }
@@ -111,21 +88,17 @@ public class SkillBlackjack extends ActiveSkill {
 
         @Override
         public void onEntityDamage(EntityDamageEvent event) {
-            if (event.isCancelled())
-                return;
+            if (event.isCancelled()) return;
             if (event instanceof EntityDamageByEntityEvent) {
                 EntityDamageByEntityEvent subEvent = (EntityDamageByEntityEvent) event;
-                if (subEvent.getCause() != DamageCause.ENTITY_ATTACK)
-                    return;
+                if (subEvent.getCause() != DamageCause.ENTITY_ATTACK) return;
 
                 Entity attackingEntity = subEvent.getDamager();
                 Entity defendingEntity = subEvent.getEntity();
 
-                if (!(attackingEntity instanceof Player))
-                    return;
+                if (!(attackingEntity instanceof Player)) return;
 
-                if (!(defendingEntity instanceof Player))
-                    return;
+                if (!(defendingEntity instanceof Player)) return;
 
                 HeroManager heroManager = getPlugin().getHeroManager();
                 Hero attackingHero = heroManager.getHero((Player) attackingEntity);
@@ -136,13 +109,12 @@ public class SkillBlackjack extends ActiveSkill {
                     return;
                 }
 
-                if (!attackingHero.hasEffect("Blackjack"))
-                    return;
+                if (!attackingHero.hasEffect("Blackjack")) return;
 
                 HeroClass heroClass = attackingHero.getHeroClass();
-                double chance = getSetting(heroClass, "stun-chance", 0.20);
+                double chance = heroClass.getSkillData(getName(), "stun-chance", 0.20);
                 if (random.nextDouble() < chance) {
-                    int duration = getSetting(heroClass, "stun-duration", 5000);
+                    int duration = heroClass.getSkillData(getName(), "stun-duration", 5000);
                     defendingHero.addEffect(new StunEffect(skill, duration));
                 }
             }
@@ -182,7 +154,8 @@ public class SkillBlackjack extends ActiveSkill {
             y = location.getY();
             z = location.getZ();
 
-            broadcast(location, stunApplyText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), "stun-apply-text", "%hero% is stunned!");
+            broadcast(location, message, player.getDisplayName());
         }
 
         @Override
@@ -190,7 +163,8 @@ public class SkillBlackjack extends ActiveSkill {
             super.remove(hero);
 
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), stunExpireText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), "stun-unapply-text", "%hero% is no longer stunned!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override

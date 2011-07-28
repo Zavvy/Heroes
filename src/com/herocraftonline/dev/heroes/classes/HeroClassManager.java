@@ -4,12 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
 import org.bukkit.Material;
 import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
 
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.classes.HeroClass.ArmorItems;
@@ -20,6 +20,7 @@ import com.herocraftonline.dev.heroes.classes.HeroClass.WeaponType;
 import com.herocraftonline.dev.heroes.damage.DamageManager.ProjectileType;
 import com.herocraftonline.dev.heroes.skill.OutsourcedSkill;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class HeroClassManager {
 
@@ -191,20 +192,17 @@ public class HeroClassManager {
             } else {
                 for (String skillName : skillNames) {
                     try {
-                        Skill skill = (Skill) plugin.getCommandHandler().getCommand(skillName);
+                        Skill skill = plugin.getSkillManager().getSkill(skillName);
                         if (skill == null) {
                             Heroes.log(Level.WARNING, "Skill " + skillName + " defined for " + className + " not found.");
                             continue;
                         }
+                        
+                        SkillData data = skill.getData();
+                        Map<String, Object> classOverrides = config.getNode("classes." + className + ".permitted-skills." + skillName).getAll();
+                        data.putAll(classOverrides);
 
-                        ConfigurationNode skillSettings = Configuration.getEmptyNode();
-                        List<String> settings = config.getKeys("classes." + className + ".permitted-skills." + skillName);
-                        if (settings != null) {
-                            for (String key : settings) {
-                                skillSettings.setProperty(key, config.getProperty("classes." + className + ".permitted-skills." + skillName + "." + key));
-                            }
-                        }
-                        newClass.addSkill(skillName, skillSettings);
+                        newClass.addSkill(skillName, data);
                     } catch (IllegalArgumentException e) {
                         Heroes.log(Level.WARNING, "Invalid skill (" + skillName + ") defined for " + className + ". Skipping this skill.");
                     }
@@ -213,18 +211,20 @@ public class HeroClassManager {
 
             List<String> permissionSkillNames = config.getKeys("classes." + className + ".permission-skills");
             if (permissionSkillNames != null) {
-                for (String skill : permissionSkillNames) {
+                for (String skillName : permissionSkillNames) {
                     try {
-                        ConfigurationNode skillSettings = Configuration.getEmptyNode();
-                        skillSettings.setProperty("level", config.getInt("classes." + className + ".permission-skills." + skill + ".level", 1));
-                        newClass.addSkill(skill, skillSettings);
+                        SkillData data = new SkillData(skillName);
+                        data.putValue("level", config.getInt("classes." + className + ".permission-skills." + skillName + ".level", 1));
 
-                        String usage = config.getString("classes." + className + ".permission-skills." + skill + ".usage", "");
-                        String[] permissions = config.getStringList("classes." + className + ".permission-skills." + skill + ".permissions", null).toArray(new String[0]);
-                        OutsourcedSkill oSkill = new OutsourcedSkill(plugin, skill, permissions, usage);
-                        plugin.getCommandHandler().addCommand(oSkill);
+                        newClass.addSkill(skillName, data);
+
+                        String usage = config.getString("classes." + className + ".permission-skills." + skillName + ".usage", "");
+                        String[] permissions = config.getStringList("classes." + className + ".permission-skills." + skillName + ".permissions", null).toArray(new String[0]);
+                        OutsourcedSkill skill = new OutsourcedSkill(plugin, skillName, permissions, usage);
+                        
+                        plugin.getSkillManager().addSkill(skill);
                     } catch (IllegalArgumentException e) {
-                        Heroes.log(Level.WARNING, "Invalid permission skill (" + skill + ") defined for " + className + ". Skipping this skill.");
+                        Heroes.log(Level.WARNING, "Invalid permission skill (" + skillName + ") defined for " + className + ". Skipping this skill.");
                     }
                 }
             }

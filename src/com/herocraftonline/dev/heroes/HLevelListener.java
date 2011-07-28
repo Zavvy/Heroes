@@ -1,13 +1,10 @@
 package com.herocraftonline.dev.heroes;
 
-import java.util.List;
-
 import org.bukkit.event.CustomEventListener;
 import org.bukkit.event.Event;
 
 import com.herocraftonline.dev.heroes.api.LevelEvent;
 import com.herocraftonline.dev.heroes.classes.HeroClass;
-import com.herocraftonline.dev.heroes.command.Command;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.Skill;
 import com.herocraftonline.dev.heroes.util.Messaging;
@@ -27,17 +24,13 @@ public class HLevelListener extends CustomEventListener {
             Hero hero = subEvent.getHero();
             HeroClass heroClass = hero.getHeroClass();
             hero.syncHealth();
-            
+
             int level = subEvent.getTo();
-            List<Command> sortCommands = plugin.getCommandHandler().getCommands();
-            for (Command command : sortCommands) {
-                if (command instanceof Skill) {
-                    Skill skill = (Skill) command;
-                    if (heroClass.hasSkill(skill.getName())) {
-                        int levelRequired = skill.getSetting(heroClass, "level", 1);
-                        if (levelRequired == level) {
-                            Messaging.send(subEvent.getHero().getPlayer(), "You have learned $1.", skill.getName());
-                        }
+            for (Skill skill : plugin.getSkillManager().getSkills()) {
+                if (heroClass.hasSkill(skill.getName())) {
+                    int levelRequired = skill.getData().getValue("level", 1);
+                    if (levelRequired == level) {
+                        Messaging.send(subEvent.getHero().getPlayer(), "You have learned $1.", skill.getName());
                     }
                 }
             }

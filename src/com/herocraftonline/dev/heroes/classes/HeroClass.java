@@ -1,16 +1,16 @@
 package com.herocraftonline.dev.heroes.classes;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.bukkit.Material;
-import org.bukkit.util.config.ConfigurationNode;
 
 import com.herocraftonline.dev.heroes.damage.DamageManager.ProjectileType;
+import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class HeroClass {
 
@@ -23,8 +23,7 @@ public class HeroClass {
     private Set<ExperienceType> experienceSources;
     private Map<Material, Integer> itemDamage;
     private Map<ProjectileType, Integer> projectileDamage;
-    private Map<String, ConfigurationNode> skills;
-    //private Map<String, SkillData> skillData;
+    private Map<String, SkillData> skillData;
     private double expModifier;
 
     private double baseMaxHealth;
@@ -40,7 +39,7 @@ public class HeroClass {
         experienceSources = new LinkedHashSet<ExperienceType>();
         expModifier = 1.0D;
         specializations = new LinkedHashSet<HeroClass>();
-        skills = new LinkedHashMap<String, ConfigurationNode>();
+        skillData = new HashMap<String, SkillData>();
         baseMaxHealth = 20;
         maxHealthPerLevel = 0;
     }
@@ -58,12 +57,28 @@ public class HeroClass {
         this.allowedWeapons.add(weapon);
     }
 
-    public void addSkill(String name, ConfigurationNode settings) {
-        skills.put(name.toLowerCase(), settings);
+    public void addSkill(String name, SkillData data) {
+        skillData.put(name.toLowerCase(), data);
     }
     
     public Set<String> getSkillNames() {
-        return new TreeSet<String>(skills.keySet());
+        return new TreeSet<String>(skillData.keySet());
+    }
+    
+    public <T> T getSkillData(String skillName, String key, T defaultValue) {
+        if (hasSkill(skillName)) {
+            return getSkillData(skillName).getValue(key, defaultValue);
+        } else {
+            return defaultValue;
+        }
+    }
+    
+    public <T> T getSkillData(Skill skill, String key, T defaultValue) {
+        return getSkillData(skill.getName(), key, defaultValue);
+    }
+    
+    private SkillData getSkillData(String skillName) {
+        return skillData.get(skillName.toLowerCase());
     }
 
     @Override
@@ -127,10 +142,6 @@ public class HeroClass {
         return projectileDamage.get(type);
     }
 
-    public ConfigurationNode getSkillSettings(String name) {
-        return skills.get(name.toLowerCase());
-    }
-
     public Set<HeroClass> getSpecializations() {
         return specializations;
     }
@@ -141,7 +152,7 @@ public class HeroClass {
     }
 
     public boolean hasSkill(String name) {
-        return skills.containsKey(name.toLowerCase());
+        return skillData.containsKey(name.toLowerCase());
     }
 
     public boolean isPrimary() {
@@ -153,7 +164,7 @@ public class HeroClass {
     }
 
     public void removeSkill(String name) {
-        skills.remove(name.toLowerCase());
+        skillData.remove(name.toLowerCase());
     }
 
     public void setDescription(String description) {

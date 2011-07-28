@@ -6,9 +6,6 @@ import org.bukkit.event.CustomEventListener;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
-
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.api.ClassChangeEvent;
 import com.herocraftonline.dev.heroes.api.LevelEvent;
@@ -37,19 +34,6 @@ import com.herocraftonline.dev.heroes.persistence.Hero;
 public abstract class PassiveSkill extends Skill {
 
     /**
-     * Identifier used to store apply text setting
-     */
-    public static final String SETTING_APPLYTEXT = "apply-text";
-
-    /**
-     * Identifier used to store unapply text setting
-     */
-    public static final String SETTING_UNAPPLYTEXT = "unapply-text";
-
-    private String applyText = null;
-    private String unapplyText = null;
-
-    /**
      * Typical skill constructor, except that it automatically sets the usage text to <i>Passive Skill</i>, which should
      * not be changed for normal use. There should be no identifiers defined as a passive skill is not meant to be
      * executed.
@@ -73,33 +57,6 @@ public abstract class PassiveSkill extends Skill {
     }
 
     /**
-     * Creates and returns a <code>ConfigurationNode</code> containing the default apply and unapply texts. When using
-     * additional configuration settings in your skills, be sure to override this method to define them with defaults.
-     * 
-     * @return a default configuration
-     */
-    @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = Configuration.getEmptyNode();
-        node.setProperty(SETTING_APPLYTEXT, "%hero% gained %skill%!");
-        node.setProperty(SETTING_UNAPPLYTEXT, "%hero% lost %skill%!");
-        return node;
-    }
-
-    /**
-     * Loads and stores the skill's apply and unapply texts from the configuration. By default, these texts are
-     * "%hero% gained %skill%!" and "%hero% lost %skill%!", where %hero% and %skill% are replaced with the
-     * Hero's and skill's names, respectively.
-     */
-    @Override
-    public void init() {
-        applyText = getSetting(null, SETTING_APPLYTEXT, "%hero% gained %skill%!");
-        applyText = applyText.replace("%hero%", "$1").replace("%skill%", "$2");
-        unapplyText = getSetting(null, SETTING_UNAPPLYTEXT, "%hero% lost %skill%!");
-        unapplyText = unapplyText.replace("%hero%", "$1").replace("%skill%", "$2");
-    }
-
-    /**
      * Attempts to apply this skill's effect to the provided {@link Hero} if the it is the correct class and level.
      * 
      * @param hero
@@ -108,13 +65,10 @@ public abstract class PassiveSkill extends Skill {
     public void tryApplying(Hero hero) {
         HeroClass heroClass = hero.getHeroClass();
         if (!heroClass.hasSkill(getName())) return;
-        ConfigurationNode settings = heroClass.getSkillSettings(getName());
-        if (settings != null) {
-            if (hero.getLevel() >= getSetting(heroClass, SETTING_LEVEL, 1)) {
-                apply(hero);
-            } else {
-                unapply(hero);
-            }
+        if (hero.getLevel() >= heroClass.getSkillData(this, SkillData.LEVEL, 1)) {
+            apply(hero);
+        } else {
+            unapply(hero);
         }
     }
 
@@ -129,7 +83,9 @@ public abstract class PassiveSkill extends Skill {
         effect.setPersistent(true);
         hero.addEffect(effect);
         Player player = hero.getPlayer();
-        broadcast(player.getLocation(), applyText, player.getDisplayName(), getName());
+
+        String message = hero.getHeroClass().getSkillData(this, SkillData.APPLYTEXT, "%hero% gained %skill%!");
+        broadcast(player.getLocation(), message, player.getDisplayName());
     }
 
     /**
@@ -142,7 +98,10 @@ public abstract class PassiveSkill extends Skill {
         if (hero.hasEffect(getName())) {
             hero.removeEffect(hero.getEffect(getName()));
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), unapplyText, player.getDisplayName(), getName());
+
+            String message = hero.getHeroClass().getSkillData(this, SkillData.UNAPPLYTEXT, "%hero% lost %skill%!");
+            message = message.replace("%hero%", "$1").replace("%skill%", "$2");
+            broadcast(player.getLocation(), message, player.getDisplayName(), getName());
         }
     }
 

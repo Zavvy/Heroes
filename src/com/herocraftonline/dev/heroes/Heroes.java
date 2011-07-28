@@ -62,6 +62,7 @@ import com.herocraftonline.dev.heroes.persistence.HeroManager;
 import com.herocraftonline.dev.heroes.skill.OutsourcedSkill;
 import com.herocraftonline.dev.heroes.skill.Skill;
 import com.herocraftonline.dev.heroes.skill.SkillLoader;
+import com.herocraftonline.dev.heroes.skill.SkillManager;
 import com.herocraftonline.dev.heroes.util.ConfigManager;
 import com.herocraftonline.dev.heroes.util.DebugLog;
 import com.nijiko.permissions.PermissionHandler;
@@ -94,7 +95,8 @@ public class Heroes extends JavaPlugin {
 
     // Various data managers
     private ConfigManager configManager;
-    private CommandHandler commandHandler = new CommandHandler();
+    private CommandHandler commandHandler;
+    private SkillManager skillManager;
     private HeroClassManager heroClassManager;
     private HeroManager heroManager;
     private PartyManager partyManager;
@@ -146,6 +148,10 @@ public class Heroes extends JavaPlugin {
 
     public HeroManager getHeroManager() {
         return heroManager;
+    }
+    
+    public SkillManager getSkillManager() {
+        return skillManager;
     }
 
     public InventoryChecker getInventoryChecker() {
@@ -223,6 +229,8 @@ public class Heroes extends JavaPlugin {
         partyManager = new PartyManager(this);
         heroManager = new HeroManager(this);
         damageManager = new DamageManager(this);
+        commandHandler = new CommandHandler();
+        skillManager = new SkillManager();
 
         // Check for BukkitContrib
         setupBukkitContrib();

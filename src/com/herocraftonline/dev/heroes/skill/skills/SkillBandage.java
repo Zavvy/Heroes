@@ -5,8 +5,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.util.config.ConfigurationNode;
-
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.TargettedSkill;
@@ -23,19 +21,11 @@ public class SkillBandage extends TargettedSkill {
     }
 
     @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = super.getDefaultConfig();
-        node.setProperty("health", 5);
-        node.setProperty(SETTING_MAXDISTANCE, 5);
-        return node;
-    }
-
-    @Override
     public boolean use(Hero hero, LivingEntity target, String[] args) {
         Player player = hero.getPlayer();
         if (target instanceof Player) {
             Hero targetHero = getPlugin().getHeroManager().getHero((Player) target);
-            int hpPlus = getSetting(hero.getHeroClass(), "health", 5);
+            int hpPlus = hero.getHeroClass().getSkillData(this, "health", 5);
             double targetHealth = targetHero.getHealth();
 
             if (targetHealth >= targetHero.getMaxHealth()) {
@@ -66,4 +56,7 @@ public class SkillBandage extends TargettedSkill {
         }
         return false;
     }
+
+    @Override
+    public void init() {}
 }

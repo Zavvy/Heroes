@@ -6,8 +6,6 @@ import org.bukkit.event.CustomEventListener;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event.Type;
-import org.bukkit.util.config.ConfigurationNode;
-
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.api.ClassChangeEvent;
 import com.herocraftonline.dev.heroes.api.LevelEvent;
@@ -35,18 +33,19 @@ public class OutsourcedSkill extends Skill {
     private String[] permissions;
 
     /**
-     * Constructor which defines the parameters required of any {@link com.herocraftonline.dev.heroes.command.BaseCommand} as well as the permissions to be managed by this faux
+     * Constructor which defines the parameters required of any
+     * {@link com.herocraftonline.dev.heroes.command.BaseCommand} as well as the permissions to be managed by this faux
      * skill. The description is automatically set to be the same as the usage so that the usage is readily displayed in
      * the skills list. No arguments are allowed for such a skill as it has no identifier to be executed with.
      * 
      * @param plugin
-     *        the active Heroes instance
+     *            the active Heroes instance
      * @param name
-     *        the name of the skill
+     *            the name of the skill
      * @param permissions
-     *        the permissions to be managed by this skill
+     *            the permissions to be managed by this skill
      * @param usage
-     *        the usage text defined in the classes.yml config
+     *            the usage text defined in the classes.yml config
      */
     public OutsourcedSkill(Heroes plugin, String name, String[] permissions, String usage) {
         super(plugin, name);
@@ -54,7 +53,6 @@ public class OutsourcedSkill extends Skill {
         setArgumentRange(0, 0);
         setDescription(usage);
         this.permissions = permissions;
-        registerEvent(Type.CUSTOM_EVENT, new SkillCustomListener(), Priority.Normal);
     }
 
     /**
@@ -66,17 +64,10 @@ public class OutsourcedSkill extends Skill {
     }
 
     /**
-     * Serves no purpose for an outsourced skill.
-     */
-    @Override
-    public void init() {
-    }
-
-    /**
      * Grants this skill's associated permissions to the provided {@link Hero} if it is the correct class and level.
      * 
      * @param hero
-     *        the <code>Hero</code> attempting to learn the skill
+     *            the <code>Hero</code> attempting to learn the skill
      */
     public void tryLearningSkill(Hero hero) {
         tryLearningSkill(hero, hero.getHeroClass());
@@ -87,30 +78,20 @@ public class OutsourcedSkill extends Skill {
      * has the skill.
      * 
      * @param hero
-     *        the <code>Hero</code> attempting to learn the skill
+     *            the <code>Hero</code> attempting to learn the skill
      * @param heroClass
-     *        the {@link HeroClass} to check for this skill
+     *            the {@link HeroClass} to check for this skill
      */
     public void tryLearningSkill(Hero hero, HeroClass heroClass) {
-        if (Heroes.Permissions == null)
-            return;
+        if (Heroes.Permissions == null) return;
 
         Player player = hero.getPlayer();
         String world = player.getWorld().getName();
         String playerName = player.getName();
-        ConfigurationNode settings = heroClass.getSkillSettings(getName());
-        if (settings != null) {
-            if (hero.getLevel() >= getSetting(heroClass, SETTING_LEVEL, 1)) {
-                for (String permission : permissions) {
-                    if (!hasPermission(world, playerName, permission)) {
-                        addPermission(world, playerName, permission);
-                    }
-                }
-            } else {
-                for (String permission : permissions) {
-                    if (hasPermission(world, playerName, permission)) {
-                        removePermission(world, playerName, permission);
-                    }
+        if (hero.getLevel() >= heroClass.getSkillData(this, SkillData.LEVEL, 1)) {
+            for (String permission : permissions) {
+                if (!hasPermission(world, playerName, permission)) {
+                    addPermission(world, playerName, permission);
                 }
             }
         } else {
@@ -124,7 +105,6 @@ public class OutsourcedSkill extends Skill {
 
     private void addPermission(String world, String player, String permission) {
         try {
-            // Heroes.Permissions.safeGetUser(world, player).addPermission(permission); -- Incase we need it.
             Heroes.Permissions.safeGetUser(world, player).addTransientPermission(permission);
         } catch (Exception e) {
             e.printStackTrace();
@@ -164,6 +144,11 @@ public class OutsourcedSkill extends Skill {
                 tryLearningSkill(subEvent.getHero());
             }
         }
+    }
+
+    @Override
+    public void init() {
+        registerEvent(Type.CUSTOM_EVENT, new SkillCustomListener(), Priority.Normal);
     }
 
 }

@@ -20,8 +20,12 @@ public class Effect {
     public void apply(Hero hero) {
     }
 
-    public void broadcast(Location source, String message, Object... args) {
-        skill.broadcast(source, message, args);
+    public void broadcast(Location source, String message, String user, String target) {
+        skill.broadcast(source, message, user, target);
+    }
+    
+    public void broadcast(Location source, String message, String user) {
+        skill.broadcast(source, message, user);
     }
 
     @Override

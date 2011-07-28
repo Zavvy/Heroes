@@ -5,9 +5,6 @@ import java.util.Map;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.util.config.Configuration;
-import org.bukkit.util.config.ConfigurationNode;
-
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.classes.HeroClass;
 import com.herocraftonline.dev.heroes.classes.HeroClass.ExperienceType;
@@ -35,27 +32,6 @@ import com.herocraftonline.dev.heroes.util.Messaging;
  */
 public abstract class ActiveSkill extends Skill {
 
-    /**
-     * Identifier used to store mana usage setting
-     */
-    public static final String SETTING_MANA = "mana";
-
-    /**
-     * Identifier used to store cooldown duration setting
-     */
-    public static final String SETTING_COOLDOWN = "cooldown";
-
-    /**
-     * Identifier used to store experience award setting
-     */
-    public static final String SETTING_EXP = "exp";
-
-    /**
-     * Identifier used to store usage text setting
-     */
-    public static final String SETTING_USETEXT = "use-text";
-
-    private String useText;
     private boolean awardExpOnCast = true;
 
     /**
@@ -98,19 +74,19 @@ public abstract class ActiveSkill extends Skill {
             Messaging.send(player, "$1s cannot use $2.", heroClass.getName(), name);
             return false;
         }
-        int level = getSetting(heroClass, SETTING_LEVEL, 1);
+        int level = heroClass.getSkillData(this, SkillData.LEVEL, 1);
         if (hero.getLevel() < level) {
             Messaging.send(player, "You must be level $1 to use $2.", String.valueOf(level), name);
             return false;
         }
-        int manaCost = getSetting(heroClass, SETTING_MANA, 0);
+        int manaCost = heroClass.getSkillData(this, SkillData.MANA, 0);
         if (manaCost > hero.getMana()) {
             Messaging.send(player, "Not enough mana!");
             return false;
         }
         Map<String, Long> cooldowns = hero.getCooldowns();
         long time = System.currentTimeMillis();
-        int cooldown = getSetting(heroClass, SETTING_COOLDOWN, 0);
+        int cooldown = heroClass.getSkillData(this, SkillData.COOLDOWN, 0);
         if (cooldown > 0) {
             Long expiry = cooldowns.get(name);
             if (expiry != null) {
@@ -142,50 +118,6 @@ public abstract class ActiveSkill extends Skill {
     }
 
     /**
-     * Creates and returns a <code>ConfigurationNode</code> containing the default usage text. When using additional
-     * configuration settings in your skills, be sure to override this method to define them with defaults.
-     * 
-     * @return a default configuration
-     */
-    @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = Configuration.getEmptyNode();
-        node.setProperty(SETTING_USETEXT, "%hero% used %skill%!");
-        return node;
-    }
-
-    /**
-     * Returns the text to be displayed when the skill is successfully used. This text is pulled from the
-     * {@link #SETTING_USETEXT} entry in the skill's configuration during initialization.
-     * 
-     * @return the usage text
-     */
-    public String getUseText() {
-        return useText;
-    }
-
-    /**
-     * Loads and stores the skill's usage text from the configuration. By default, this text is "%hero% used %skill%!"
-     * where %hero% and %skill% are replaced with the Hero's and skill's names, respectively.
-     */
-    @Override
-    public void init() {
-        String useText = getSetting(null, SETTING_USETEXT, "%hero% used %skill%!");
-        useText = useText.replace("%hero%", "$1").replace("%skill%", "$2");
-        setUseText(useText);
-    }
-
-    /**
-     * Changes the stored usage text. This can be used to override the message found in the skill's configuration.
-     * 
-     * @param useText
-     *            the new usage text
-     */
-    public void setUseText(String useText) {
-        this.useText = useText;
-    }
-
-    /**
      * The heart of any ActiveSkill, this method defines what actually happens when the skill is used. See
      * {@link #execute(CommandSender, String[]) execute} for a brief explanation of the execution process.
      * 
@@ -200,13 +132,14 @@ public abstract class ActiveSkill extends Skill {
     private void awardExp(Hero hero) {
         HeroClass heroClass = hero.getHeroClass();
         if (heroClass.getExperienceSources().contains(ExperienceType.SKILL)) {
-            hero.gainExp(this.getSetting(heroClass, SETTING_EXP, 0), ExperienceType.SKILL);
+            hero.gainExp(heroClass.getSkillData(this, SkillData.EXP, 0), ExperienceType.SKILL);
         }
     }
 
     protected void broadcastExecuteText(Hero hero) {
         Player player = hero.getPlayer();
-        broadcast(player.getLocation(), getUseText(), player.getDisplayName(), getName());
+        String message = hero.getHeroClass().getSkillData(this, SkillData.USETEXT, "%hero% used %skill%!");
+        broadcast(player.getLocation(), message, player.getDisplayName());
     }
 
 }

@@ -14,9 +14,9 @@ import org.bukkit.entity.Player;
 import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.classes.HeroClass;
 import com.herocraftonline.dev.heroes.command.BasicCommand;
-import com.herocraftonline.dev.heroes.command.Command;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class SkillListCommand extends BasicCommand {
 
@@ -49,12 +49,9 @@ public class SkillListCommand extends BasicCommand {
 
         Map<Skill, Integer> skills = new HashMap<Skill, Integer>();
         // Filter out Skills from the command list.
-        for (Command command : plugin.getCommandHandler().getCommands()) {
-            if (command instanceof Skill) {
-                Skill skill = (Skill) command;
-                if (heroClass.hasSkill(skill.getName()) && !skills.containsKey(skill)) {
-                    skills.put(skill, skill.getSetting(heroClass, Skill.SETTING_LEVEL, 1));
-                }
+        for (Skill skill : plugin.getSkillManager().getSkills()) {
+            if (heroClass.hasSkill(skill.getName()) && !skills.containsKey(skill)) {
+                skills.put(skill, skill.getData().getValue(SkillData.LEVEL, 1));
             }
         }
 

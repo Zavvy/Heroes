@@ -19,6 +19,7 @@ import com.herocraftonline.dev.heroes.Heroes;
 import com.herocraftonline.dev.heroes.classes.HeroClassManager;
 import com.herocraftonline.dev.heroes.command.Command;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class ConfigManager {
 
@@ -119,6 +120,7 @@ public class ConfigManager {
     }
 
     private void generateSkills(Configuration config) {
+        /*
         for (Command baseCommand : plugin.getCommandHandler().getCommands()) {
             if (baseCommand instanceof Skill) {
                 Skill skill = (Skill) baseCommand;
@@ -134,6 +136,7 @@ public class ConfigManager {
         }
         config.save();
         loadSkills(config);
+        */
     }
 
     private void loadDefaultConfig(Configuration config) {
@@ -215,18 +218,14 @@ public class ConfigManager {
 
     private void loadSkills(Configuration config) {
         config.load();
-        for (Command baseCommand : plugin.getCommandHandler().getCommands()) {
-            if (baseCommand instanceof Skill) {
-                Skill skill = (Skill) baseCommand;
+        for (Command command : plugin.getCommandHandler().getCommands()) {
+            if (command instanceof Skill) {
+                Skill skill = (Skill) command;
                 ConfigurationNode node = config.getNode(skill.getName());
                 if (node != null) {
-                    // System.out.println(skill.getName());
-                    // print(node.getAll(), "  ");
-                    skill.setConfig(node);
-                } else {
-                    skill.setConfig(Configuration.getEmptyNode());
+                    SkillData data = new SkillData(skill.getName());
+                    data.setData(node.getAll());
                 }
-                skill.init();
             }
         }
     }

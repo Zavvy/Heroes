@@ -21,7 +21,7 @@ import com.herocraftonline.dev.heroes.util.Messaging;
 
 public class CommandHandler {
 
-    protected LinkedHashMap<String, Command> commands;
+    private LinkedHashMap<String, Command> commands;
 
     public CommandHandler() {
         commands = new LinkedHashMap<String, Command>();

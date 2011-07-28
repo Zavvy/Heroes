@@ -71,4 +71,7 @@ public class SkillBarrage extends ActiveSkill {
         broadcastExecuteText(hero);
         return true;
     }
+
+    @Override
+    public void init() {}
 }
