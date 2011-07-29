@@ -8,20 +8,19 @@ import org.bukkit.util.Vector;
 import org.bukkit.util.config.ConfigurationNode;
 
 import com.herocraftonline.dev.heroes.Heroes;
+import com.herocraftonline.dev.heroes.classes.HeroClass;
 import com.herocraftonline.dev.heroes.effects.Expirable;
 import com.herocraftonline.dev.heroes.effects.Periodic;
 import com.herocraftonline.dev.heroes.effects.PeriodicEffect;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 import com.herocraftonline.dev.heroes.skill.TargettedSkill;
 import com.herocraftonline.dev.heroes.util.Messaging;
 
 public class SkillConfuse extends TargettedSkill {
 
     private static final Random random = new Random();
-
-    private String applyText;
-    private String expireText;
 
     public SkillConfuse(Heroes plugin) {
         super(plugin, "Confuse");
@@ -32,22 +31,7 @@ public class SkillConfuse extends TargettedSkill {
     }
 
     @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = super.getDefaultConfig();
-        node.setProperty("duration", 10000);
-        node.setProperty("period", 1000);
-        node.setProperty("max-drift", 0.35);
-        node.setProperty("apply-text", "%target% is confused!");
-        node.setProperty("expire-text", "%target% has regained his wit!");
-        return node;
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        applyText = getSetting(null, "apply-text", "%target% is confused!").replace("%target%", "$1");
-        expireText = getSetting(null, "expire-text", "%target% has regained his wit!").replace("%target%", "$1");
-    }
+    public void init() {}
 
     @Override
     public boolean use(Hero hero, LivingEntity target, String[] args) {
@@ -66,9 +50,10 @@ public class SkillConfuse extends TargettedSkill {
 
         broadcastExecuteText(hero, target);
 
-        long duration = getSetting(hero.getHeroClass(), "duration", 10000);
-        long period = getSetting(hero.getHeroClass(), "period", 2000);
-        float maxDrift = (float) getSetting(hero.getHeroClass(), "max-drift", 0.35);
+        HeroClass heroClass = hero.getHeroClass();
+        long duration = heroClass.getSkillData(this, "duration", 10000);
+        long period = heroClass.getSkillData(this, "period", 2000);
+        float maxDrift = (float) heroClass.getSkillData(this, "max-drift", 0.35f);
         targetHero.addEffect(new ConfuseEffect(this, duration, period, maxDrift));
         return true;
     }
@@ -86,14 +71,16 @@ public class SkillConfuse extends TargettedSkill {
         public void apply(Hero hero) {
             super.apply(hero);
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), applyText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.APPLYTEXT, "%hero% is confused!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override
         public void remove(Hero hero) {
             super.remove(hero);
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), expireText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.UNAPPLYTEXT, "%hero% has regained his wit!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override

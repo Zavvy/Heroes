@@ -14,12 +14,9 @@ import com.herocraftonline.dev.heroes.effects.ExpirableEffect;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.ActiveSkill;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 
 public class SkillBladegrasp extends ActiveSkill {
-
-    private String applyText;
-    private String expireText;
-    private String parryText;
 
     public SkillBladegrasp(Heroes plugin) {
         super(plugin, "Bladegrasp");
@@ -27,32 +24,17 @@ public class SkillBladegrasp extends ActiveSkill {
         setUsage("/skill bladegrasp");
         setArgumentRange(0, 0);
         setIdentifiers(new String[] { "skill bladegrasp" });
-
-        registerEvent(Type.ENTITY_DAMAGE, new SkillEntityListener(), Priority.Normal);
-    }
-
-    @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = super.getDefaultConfig();
-        node.setProperty("duration", 5000);
-        node.setProperty("apply-text", "%hero% tightened his grip!");
-        node.setProperty("expire-text", "%hero% loosened his grip!");
-        node.setProperty("parry-text", "%hero% parried an attack!");
-        return node;
     }
 
     @Override
     public void init() {
-        super.init();
-        applyText = getSetting(null, "apply-text", "%hero% tightened his grip!").replace("%hero%", "$1");
-        expireText = getSetting(null, "expire-text", "%hero% loosened his grip!").replace("%hero%", "$1");
-        parryText = getSetting(null, "parry-text", "%hero% parried an attack!").replace("%hero%", "$1");
+        registerEvent(Type.ENTITY_DAMAGE, new SkillEntityListener(), Priority.Normal);
     }
 
     @Override
     public boolean use(Hero hero, String[] args) {
         broadcastExecuteText(hero);
-        int duration = getSetting(hero.getHeroClass(), "duration", 5000);
+        int duration = hero.getHeroClass().getSkillData(this, "duration", 5000);
         hero.addEffect(new BladegraspEffect(this, duration));
 
         return true;
@@ -68,19 +50,20 @@ public class SkillBladegrasp extends ActiveSkill {
         public void apply(Hero hero) {
             super.apply(hero);
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), applyText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.APPLYTEXT, "%hero% tightened his grip!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override
         public void remove(Hero hero) {
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), expireText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.UNAPPLYTEXT, "%hero% loosened his grip!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
     }
 
     public class SkillEntityListener extends EntityListener {
-
         @Override
         public void onEntityDamage(EntityDamageEvent event) {
             Entity defender = event.getEntity();
@@ -90,7 +73,8 @@ public class SkillBladegrasp extends ActiveSkill {
                 if (hero.hasEffect(getName())) {
                     if (event.getCause() == DamageCause.ENTITY_ATTACK || event.getCause() == DamageCause.ENTITY_EXPLOSION) {
                         event.setCancelled(true);
-                        broadcast(player.getLocation(), parryText, player.getDisplayName());
+                        String message = hero.getHeroClass().getSkillData(getName(), "parry-text", "%hero% parried an attack!");
+                        broadcast(player.getLocation(), message, player.getDisplayName());
                     }
                 }
             }

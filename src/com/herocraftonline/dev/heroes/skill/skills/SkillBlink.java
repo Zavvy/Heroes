@@ -29,4 +29,7 @@ public class SkillBlink extends ActiveSkill {
         return true;
     }
 
+    @Override
+    public void init() {}
+
 }

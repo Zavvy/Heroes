@@ -6,19 +6,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.config.ConfigurationNode;
 
 import com.herocraftonline.dev.heroes.Heroes;
+import com.herocraftonline.dev.heroes.classes.HeroClass;
 import com.herocraftonline.dev.heroes.effects.Expirable;
 import com.herocraftonline.dev.heroes.effects.Periodic;
 import com.herocraftonline.dev.heroes.effects.PeriodicEffect;
 import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.skill.Skill;
+import com.herocraftonline.dev.heroes.skill.SkillData;
 import com.herocraftonline.dev.heroes.skill.TargettedSkill;
 import com.herocraftonline.dev.heroes.util.Messaging;
 
 public class SkillBleed extends TargettedSkill {
-
-    private String applyText;
-    private String expireText;
-
     public SkillBleed(Heroes plugin) {
         super(plugin, "Bleed");
         setDescription("Causes your target to bleed");
@@ -28,22 +26,7 @@ public class SkillBleed extends TargettedSkill {
     }
 
     @Override
-    public ConfigurationNode getDefaultConfig() {
-        ConfigurationNode node = super.getDefaultConfig();
-        node.setProperty("duration", 10000);
-        node.setProperty("period", 2000);
-        node.setProperty("tick-damage", 1);
-        node.setProperty("apply-text", "%target% is bleeding!");
-        node.setProperty("expire-text", "%target% has stopped bleeding!");
-        return node;
-    }
-
-    @Override
-    public void init() {
-        super.init();
-        applyText = getSetting(null, "apply-text", "%target% is bleeding!").replace("%target%", "$1");
-        expireText = getSetting(null, "expire-text", "%target% has stopped bleeding!").replace("%target%", "$1");
-    }
+    public void init() {}
 
     @Override
     public boolean use(Hero hero, LivingEntity target, String[] args) {
@@ -60,12 +43,13 @@ public class SkillBleed extends TargettedSkill {
             return false;
         }
 
-        broadcastExecuteText(hero, target);
-
-        long duration = getSetting(hero.getHeroClass(), "duration", 10000);
-        long period = getSetting(hero.getHeroClass(), "period", 2000);
-        int tickDamage = getSetting(hero.getHeroClass(), "tick-damage", 1);
+        HeroClass heroClass = hero.getHeroClass();
+        long duration = heroClass.getSkillData(this, "duration", 10000);
+        long period = heroClass.getSkillData(this, "period", 2000);
+        int tickDamage = heroClass.getSkillData(this, "tick-damage", 1);
         targetHero.addEffect(new BleedEffect(this, duration, period, tickDamage, player));
+
+        broadcastExecuteText(hero, target);
         return true;
     }
 
@@ -84,21 +68,21 @@ public class SkillBleed extends TargettedSkill {
         public void apply(Hero hero) {
             super.apply(hero);
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), applyText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.APPLYTEXT, "%hero% is bleeding!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override
         public void remove(Hero hero) {
             super.remove(hero);
-
             Player player = hero.getPlayer();
-            broadcast(player.getLocation(), expireText, player.getDisplayName());
+            String message = hero.getHeroClass().getSkillData(getSkill(), SkillData.UNAPPLYTEXT, "%hero% has stopped bleeding!");
+            broadcast(player.getLocation(), message, player.getDisplayName());
         }
 
         @Override
         public void tick(Hero hero) {
             super.tick(hero);
-
             Player player = hero.getPlayer();
             getPlugin().getDamageManager().addSpellTarget((Entity) applier);
             player.damage(tickDamage, applier);
