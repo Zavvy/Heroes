@@ -29,7 +29,7 @@ import com.herocraftonline.dev.heroes.persistence.Hero;
 import com.herocraftonline.dev.heroes.util.Properties;
 
 // import org.bukkit.entity.Projectile;
-// import com.herocraftonline.dev.heroes.damage.DamageManager.ProjectileType;
+import com.herocraftonline.dev.heroes.damage.DamageManager.ProjectileType;
 
 public class HeroesDamageListener extends EntityListener {
 
@@ -158,7 +158,7 @@ public class HeroesDamageListener extends EntityListener {
                 }
                 damage = spellDamageEvent.getDamage();
             }
-        } else if (damage != 0) {
+        } else  {
             if (event instanceof EntityDamageByEntityEvent) {
                 attacker = ((EntityDamageByEntityEvent) event).getDamager();
                 if (attacker instanceof Player) {
@@ -183,7 +183,9 @@ public class HeroesDamageListener extends EntityListener {
                     if (projectile.getShooter() instanceof Player) {
                         attacker = projectile.getShooter();
                         // Allow alteration of player damage
-                        damage = getPlayerDamage((Player) projectile.getShooter(), damage);
+                        damage = getPlayerProjectileDamage((Player) projectile.getShooter(), damage, projectile);
+                        
+                        plugin.debugLog(Level.INFO, "Damage done by projectile from player" + projectile.getShooter() + " of " + damage + " with a " + ProjectileType.valueOf(projectile) );
                     } else {
                         attacker = projectile.getShooter();
                         CreatureType type = Properties.getCreatureFromEntity(projectile.getShooter());
@@ -270,6 +272,11 @@ public class HeroesDamageListener extends EntityListener {
         } else if (entity instanceof LivingEntity) {
             event.setDamage(damage);
         }
+    }
+
+    private int getPlayerProjectileDamage(Player attacker, int damage, Projectile projectile) {
+        Integer tmpDamage = damageManager.getProjectileDamage(ProjectileType.valueOf(projectile), attacker);
+        return (tmpDamage == null) ? damage : tmpDamage;
     }
 
     private int getPlayerDamage(Player attacker, int damage) {
