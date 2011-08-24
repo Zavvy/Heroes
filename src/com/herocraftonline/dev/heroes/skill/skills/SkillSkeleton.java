@@ -146,7 +146,7 @@ public class SkillSkeleton extends ActiveSkill {
         public void tick(Hero hero) {
             super.tick(hero);
             for (Creature creature : hero.getSummons()) {
-                if (creature instanceof Skeleton && (creature.getTarget() == null || creature.getTarget().isDead())) {
+                if (creature instanceof Skeleton && (creature.getTarget() == null || (creature.getTarget() instanceof LivingEntity && creature.getTarget().isDead()) )) {
                     moveSkeleton(creature, hero);
                 }
             }
